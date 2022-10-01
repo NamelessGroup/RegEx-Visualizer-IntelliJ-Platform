@@ -2,16 +2,18 @@ package dev.namelessgroup.regexvisualizerintellijplatform.controller;
 
 import org.apache.commons.lang.NotImplementedException;
 
+import java.util.regex.Pattern;
+
 public final class RegexUtilites {
     
     private RegexUtilites() {}
 
-    public boolean isRegex(String regex) {
+    public static boolean isRegex(String regex) {
         // TODO
         throw new NotImplementedException();
     }
 
-    public boolean matchesRegex(String regex, String input) {
+    public static boolean matchesRegex(String regex, String input) {
         // TODO
         throw new NotImplementedException();
     }
