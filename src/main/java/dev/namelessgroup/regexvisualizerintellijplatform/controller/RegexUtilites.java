@@ -1,7 +1,5 @@
 package dev.namelessgroup.regexvisualizerintellijplatform.controller;
 
-import org.apache.commons.lang.NotImplementedException;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;

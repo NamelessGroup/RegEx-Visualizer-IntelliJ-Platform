@@ -1,17 +1,34 @@
 package dev.namelessgroup.regexvisualizerintellijplatform.model;
 
 public class Node {
-    private String content;
-    private Node nextNode;
-    private int lowerBound;
-    private int upperBound;
+    private final String content;
+    private final int lowerBound;
+    private final int upperBound;
+
+    /**
+     * Constructs a new node with the given content
+     * @param content Content of the node
+     */
+    public Node(String content) {
+        this.content = content;
+        this.lowerBound = 1;
+        this.upperBound = 1;
+    }
+
+    /**
+     * Constructs a new node with the given content, upper and lower bound
+     * @param content Content of the node
+     * @param lowerBound Lower bound of the node
+     * @param upperBound Upper bound of the node
+     */
+    public Node(String content, int lowerBound, int upperBound) {
+        this.content = content;
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
+    }
 
     public String getContent() {
         return this.content;
-    }
-
-    public Node getNextNode() {
-        return this.nextNode;
     }
 
     public int getLowerBound() {
@@ -20,6 +37,10 @@ public class Node {
 
     public int getUpperBound() {
         return this.upperBound;
+    }
+
+    public boolean isOptional() {
+        return this.lowerBound == 0;
     }
 }
 
