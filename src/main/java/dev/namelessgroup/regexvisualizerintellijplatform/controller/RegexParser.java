@@ -9,9 +9,9 @@ public class RegexParser {
 
     private static final List<Character> lazySearchable = List.of('?', '*', '+');
 
-    public List<Node> buildRegexNodes(String regex) throws RuntimeException {
-        // TODO
+    public RegexParser() {}
 
+    public List<Node> buildRegexNodes(String regex) throws RuntimeException {
         // Warning: probably a lot of spaghetti-code ahead
         List<Node> nodes = new ArrayList<>();
         String lastContent = "";
@@ -134,7 +134,7 @@ public class RegexParser {
                     } else {
                         this.addNode(nodes, new OneOfNode(regex.substring(j, k)));
                     }
-                    i += k;
+                    i = k;
                     postGroup = true;
                     break;
                 case '(':
@@ -163,7 +163,7 @@ public class RegexParser {
                     }
 
                     this.addNode(nodes, new GroupNode(this.buildRegexNodes(regex.substring(groupJ, groupK))));
-                    i += groupK;
+                    i = groupK;
                     postGroup = true;
                     break;
                 default:
@@ -173,11 +173,16 @@ public class RegexParser {
             }
         }
 
+        // Add the last group
+        if (lastContent.length() > 0) {
+            this.addNode(nodes, new Node(lastContent));
+        }
+
         return nodes;
     }
 
     private void addNode(List<Node> nodes, Node nodeToAdd) {
-        if (nodes.get(nodes.size() - 1) instanceof OrNode) {
+        if (nodes.size() > 0 && nodes.get(nodes.size() - 1) instanceof OrNode) {
             OrNode lastOrNode = (OrNode) nodes.get(nodes.size() - 1);
             lastOrNode.addNodeToLastPath(nodeToAdd);
         } else {

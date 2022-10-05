@@ -8,4 +8,9 @@ public class OneOfNode extends Node {
     public OneOfNode(String content, int lowerBound, int upperBound) {
         super(content, lowerBound, upperBound);
     }
+
+    @Override
+    public String toString() {
+        return "OneOfNode(" + this.getContent() + ")";
+    }
 }

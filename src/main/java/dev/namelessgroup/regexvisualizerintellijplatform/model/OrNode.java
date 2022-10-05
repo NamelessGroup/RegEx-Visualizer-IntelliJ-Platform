@@ -2,6 +2,7 @@ package dev.namelessgroup.regexvisualizerintellijplatform.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OrNode extends Node {
     private final List<List<Node>> children;
@@ -13,7 +14,9 @@ public class OrNode extends Node {
 
     public OrNode(List<Node> firstPath) {
         super("");
-        this.children = List.of(firstPath);
+        this.children = new ArrayList<>();
+        this.children.add(firstPath);
+        this.addNewPath();
     }
 
     public List<List<Node>> getChildren() {
@@ -31,6 +34,11 @@ public class OrNode extends Node {
 
     public void addNodeToLastPath(Node nodeToAdd) {
         this.children.get(this.children.size() - 1).add(nodeToAdd);
+    }
+
+    @Override
+    public String toString() {
+        return "OrNode(" + this.children.stream().map(e -> e.stream().map(Node::toString).collect(Collectors.joining(","))).collect(Collectors.joining(" | ")) + ")";
     }
 
 }

@@ -9,6 +9,10 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
+dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
+}
 
 // Configure Gradle IntelliJ Plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
 intellij {
@@ -39,4 +43,8 @@ tasks {
     publishPlugin {
         token.set(System.getenv("PUBLISH_TOKEN"))
     }
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }

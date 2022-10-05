@@ -1,6 +1,7 @@
 package dev.namelessgroup.regexvisualizerintellijplatform.model;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class GroupNode extends Node {
     private List<Node> children;
@@ -20,5 +21,10 @@ public class GroupNode extends Node {
 
     public List<Node> getNodes() {
         return children;
+    }
+
+    @Override
+    public String toString() {
+        return "GroupNode(" + this.children.stream().map(Node::toString).collect(Collectors.joining(",")) + ")";
     }
 }

@@ -2,6 +2,7 @@ package dev.namelessgroup.regexvisualizerintellijplatform.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class NonCapturingGroupNode extends GroupNode {
 
@@ -23,5 +24,10 @@ public class NonCapturingGroupNode extends GroupNode {
 
     public void addChild(Node node) {
         this.children.add(node);
+    }
+
+    @Override
+    public String toString() {
+        return "NonCapturingGroupNode(" + this.children.stream().map(Node::toString).collect(Collectors.joining(",")) + ")";
     }
 }

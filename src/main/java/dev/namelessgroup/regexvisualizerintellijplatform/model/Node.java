@@ -50,5 +50,10 @@ public class Node {
     public boolean isOptional() {
         return this.lowerBound == 0;
     }
+
+    @Override
+    public String toString() {
+        return "Node(" + this.content + ")";
+    }
 }
 
