@@ -16,24 +16,9 @@ public class OrNode extends Node {
         this.children = List.of(firstPath);
     }
 
-    /**
-     * @deprecated
-     */
-    public OrNode(Node[] children) {
-        super("");
-        this.children = List.of(List.of(children));
+    public List<List<Node>> getChildren() {
+       return new ArrayList<>(this.children);
     }
-
-    /**
-     * @deprecated
-     */
-    public Node[] getChildren() {
-        return children.get(0).toArray(new Node[0]);
-    }
-
-    // public List<List<Node>> getChildren() {
-    //    return new ArrayList<>(this.children);
-    //}
 
     public Node getLastNode() {
         List<Node> lastGroup = this.children.get(this.children.size() - 1);
