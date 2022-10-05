@@ -2,8 +2,8 @@ package dev.namelessgroup.regexvisualizerintellijplatform.model;
 
 public class Node {
     private final String content;
-    private final int lowerBound;
-    private final int upperBound;
+    private int lowerBound;
+    private int upperBound;
 
     /**
      * Constructs a new node with the given content
@@ -37,6 +37,14 @@ public class Node {
 
     public int getUpperBound() {
         return this.upperBound;
+    }
+
+    public void setLowerBound(int lowerBound) {
+        this.lowerBound = lowerBound;
+    }
+
+    public void setUpperBound(int upperBound) {
+        this.upperBound = upperBound;
     }
 
     public boolean isOptional() {

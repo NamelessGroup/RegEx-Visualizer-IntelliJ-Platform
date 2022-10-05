@@ -1,22 +1,51 @@
 package dev.namelessgroup.regexvisualizerintellijplatform.model;
 
-public class OrNode extends Node {
-    private Node[] children;
+import java.util.ArrayList;
+import java.util.List;
 
-    public OrNode(String content) {
-        super(content);
+public class OrNode extends Node {
+    private final List<List<Node>> children;
+
+    public OrNode() {
+        super("");
+        this.children = new ArrayList<>();
     }
 
+    public OrNode(List<Node> firstPath) {
+        super("");
+        this.children = List.of(firstPath);
+    }
+
+    /**
+     * @deprecated
+     */
     public OrNode(Node[] children) {
         super("");
-        this.children = children;
+        this.children = List.of(List.of(children));
     }
 
-    public OrNode(String content, int lowerBound, int upperBound) {
-        super(content, lowerBound, upperBound);
-    }
-
+    /**
+     * @deprecated
+     */
     public Node[] getChildren() {
-        return children;
+        return children.get(0).toArray(new Node[0]);
     }
+
+    // public List<List<Node>> getChildren() {
+    //    return new ArrayList<>(this.children);
+    //}
+
+    public Node getLastNode() {
+        List<Node> lastGroup = this.children.get(this.children.size() - 1);
+        return lastGroup.get(lastGroup.size() - 1);
+    }
+
+    public void addNewPath() {
+        this.children.add(new ArrayList<>());
+    }
+
+    public void addNodeToLastPath(Node nodeToAdd) {
+        this.children.get(this.children.size() - 1).add(nodeToAdd);
+    }
+
 }

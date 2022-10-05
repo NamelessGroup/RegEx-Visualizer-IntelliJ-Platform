@@ -1,11 +1,27 @@
 package dev.namelessgroup.regexvisualizerintellijplatform.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class NonCapturingGroupNode extends GroupNode {
-    public NonCapturingGroupNode(String content) {
-        super(content);
+
+    private List<Node> children;
+
+    public NonCapturingGroupNode() {
+        super();
+        this.children = new ArrayList<>();
     }
 
-    public NonCapturingGroupNode(String content, int lowerBound, int upperBound) {
-        super(content, lowerBound, upperBound);
+    public NonCapturingGroupNode(int lowerBound, int upperBound) {
+        super("", lowerBound, upperBound);
+        this.children = new ArrayList<>();
+    }
+
+    public List<Node> getChildren() {
+        return new ArrayList<>(this.children);
+    }
+
+    public void addChild(Node node) {
+        this.children.add(node);
     }
 }

@@ -5,8 +5,8 @@ import java.util.List;
 public class GroupNode extends Node {
     private List<Node> children;
 
-    public GroupNode(String content) {
-        super(content);
+    public GroupNode() {
+        super("");
     }
 
     public GroupNode(List<Node> children) {
