@@ -9,34 +9,42 @@ public class RegexParser {
 
     private static final List<Character> lazySearchable = List.of('?', '*', '+');
 
-    public RegexParser() {}
+    private final String regex;
+    private List<Node> nodes;
+    private String lastContent;
 
-    public List<Node> buildRegexNodes(String regex) throws RuntimeException {
-        // Warning: probably a lot of spaghetti-code ahead
-        List<Node> nodes = new ArrayList<>();
-        String lastContent = "";
+    public RegexParser(String regex) {
+        this.regex = regex;
+        this.nodes = new ArrayList<>();
+        this.lastContent = "";
+    }
+
+    public List<Node> buildRegexNodes() throws RuntimeException {
         boolean postGroup = false;
+        boolean escapeCharacter = false;
 
-        for (int i = 0; i < regex.length(); i++) {
-            char currentCharacter = regex.charAt(i);
+        for (int i = 0; i < this.regex.length(); i++) {
+            char currentCharacter = this.regex.charAt(i);
+
+            if (escapeCharacter) {
+                this.lastContent += escapeCharacter;
+                escapeCharacter = false;
+            }
 
             switch (currentCharacter) {
                 case '|':
-                    if (lastContent.length() > 0) {
-                        // Terminate last content
-                        this.addNode(nodes, new Node(lastContent));
-                        lastContent = "";
-                    }
+                    this.terminateLastContent();
 
-                    if (nodes.get(nodes.size() - 1) instanceof OrNode) {
+                    if (this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
                         // We already have an or node, we need to start a new path
-                        ((OrNode) nodes.get(nodes.size() - 1)).addNewPath();
+                        ((OrNode) this.nodes.get(this.nodes.size() - 1)).addNewPath();
                     } else {
                         // This is our first or node
-                        OrNode rootOrNode = new OrNode(nodes);
-                        nodes = new ArrayList<>();
-                        nodes.add(rootOrNode);
+                        OrNode rootOrNode = new OrNode(this.nodes);
+                        this.nodes = new ArrayList<>();
+                        this.nodes.add(rootOrNode);
                     }
+                    postGroup = false;
                     break;
                 case '?':
                     if (lazySearchable.contains(regex.charAt(i - 1)) && regex.charAt(i - 2) != '?') {
@@ -44,76 +52,33 @@ public class RegexParser {
                         continue;
                     }
 
-                    if (postGroup) {
-                        // Since we're straight after one group, we'll make that one optional
-                        Node toMakeOptional = this.getLastNode(nodes);
-                        toMakeOptional.setLowerBound(0);
-                        postGroup = false;
+                    if (!postGroup) {
+                        this.terminateLastCharacterOrThrow();
                     }
-
-                    if (lastContent.equals("")) {
-                        // throw some exception
-                        throw new RuntimeException();
-                    } else {
-                        // This repeats the last content
-                        String characterToRepeat = lastContent.substring(lastContent.length() - 1);
-                        if (lastContent.length() > 1) {
-                            this.addNode(nodes, new Node(lastContent.substring(0, lastContent.length() - 2)));
-                        }
-                        this.addNode(nodes, new Node(characterToRepeat, 0, 1));
-                    }
-                    lastContent = "";
+                    Node toMakeOptional = this.getLastNode();
+                    toMakeOptional.setLowerBound(0);
+                    postGroup = false;
                     break;
                 case '*':
-                    if (postGroup) {
-                        // Since we're straight after one group, we'll make that one optional
-                        Node toMakeOptionallyRepeating = this.getLastNode(nodes);
-                        toMakeOptionallyRepeating.setLowerBound(0);
-                        toMakeOptionallyRepeating.setUpperBound(-1);
-                        postGroup = false;
+                    if (!postGroup) {
+                        this.terminateLastCharacterOrThrow();
                     }
-
-                    if (lastContent.equals("")) {
-                        // throw some exception
-                        throw new RuntimeException();
-                    } else {
-                        // This repeats the last content
-                        String characterToRepeat = lastContent.substring(lastContent.length() - 1);
-                        if (lastContent.length() > 1) {
-                            this.addNode(nodes, new Node(lastContent.substring(0, lastContent.length() - 2)));
-                        }
-                        this.addNode(nodes, new Node(characterToRepeat, 0, -1));
-                    }
-                    lastContent = "";
+                    Node toMakeOptionallyRepeating = this.getLastNode();
+                    toMakeOptionallyRepeating.setLowerBound(0);
+                    toMakeOptionallyRepeating.setUpperBound(-1);
+                    postGroup = false;
                     break;
                 case '+':
-                    if (postGroup) {
-                        // Since we're straight after one group, we'll make that one optional
-                        Node toMakeRepeating = this.getLastNode(nodes);
-                        toMakeRepeating.setLowerBound(1);
-                        toMakeRepeating.setUpperBound(-1);
-                        postGroup = false;
+                    if (!postGroup) {
+                        this.terminateLastCharacterOrThrow();
                     }
-
-                    if (lastContent.equals("")) {
-                        // throw some exception
-                        throw new RuntimeException();
-                    } else {
-                        // This repeats the last content
-                        String characterToRepeat = lastContent.substring(lastContent.length() - 1);
-                        if (lastContent.length() > 1) {
-                            this.addNode(nodes, new Node(lastContent.substring(0, lastContent.length() - 2)));
-                        }
-                        this.addNode(nodes, new Node(characterToRepeat, 1, -1));
-                    }
-                    lastContent = "";
+                    Node toMakeRepeating = this.getLastNode();
+                    toMakeRepeating.setLowerBound(1);
+                    toMakeRepeating.setUpperBound(-1);
+                    postGroup = false;
                     break;
                 case '[':
-                    if (lastContent.length() > 0) {
-                        // Terminate last content
-                        this.addNode(nodes, new Node(lastContent));
-                        lastContent = "";
-                    }
+                    this.terminateLastContent();
 
                     int j = i + 1;
                     if (regex.charAt(i + 1) == '^') {
@@ -122,38 +87,34 @@ public class RegexParser {
 
                     // Figuring out how long the bracket is
                     int k = j;
-                    while (k < regex.length()) {
-                        if (regex.charAt(k) == ']' && regex.charAt(k - 1) != '\\') {
+                    while (k < this.regex.length()) {
+                        if (this.regex.charAt(k) == ']' && this.regex.charAt(k - 1) != '\\') {
                             break;
                         }
                         k++;
                     }
 
-                    if (regex.charAt(i + 1) == '^') {
-                        this.addNode(nodes, new NoneOfNode(regex.substring(j, k)));
+                    if (this.regex.charAt(i + 1) == '^') {
+                        this.addNode(new NoneOfNode(this.regex.substring(j, k)));
                     } else {
-                        this.addNode(nodes, new OneOfNode(regex.substring(j, k)));
+                        this.addNode(new OneOfNode(this.regex.substring(j, k)));
                     }
                     i = k;
                     postGroup = true;
                     break;
                 case '(':
-                    if (lastContent.length() > 0) {
-                        // Terminate last content
-                        this.addNode(nodes, new Node(lastContent));
-                        lastContent = "";
-                    }
+                    this.terminateLastContent();
 
                     int groupJ = i + 1;
 
                     // Figuring out how long the bracket is
                     int groupK = groupJ;
                     int amountOpenBrackets = 1;
-                    while (groupK < regex.length()) {
-                        if (regex.charAt(groupK) == ')' && regex.charAt(groupK - 1) != '\\') {
+                    while (groupK < this.regex.length()) {
+                        if (this.regex.charAt(groupK) == ')' && this.regex.charAt(groupK - 1) != '\\') {
                             amountOpenBrackets--;
                         }
-                        if (regex.charAt(groupK) == '(' && regex.charAt(groupK - 1) != '\\') {
+                        if (this.regex.charAt(groupK) == '(' && this.regex.charAt(groupK - 1) != '\\') {
                             amountOpenBrackets++;
                         }
                         if (amountOpenBrackets <= 0) {
@@ -162,41 +123,64 @@ public class RegexParser {
                         groupK++;
                     }
 
-                    this.addNode(nodes, new GroupNode(this.buildRegexNodes(regex.substring(groupJ, groupK))));
+                    this.addNode(new GroupNode(new RegexParser(this.regex.substring(groupJ, groupK)).buildRegexNodes()));
                     i = groupK;
                     postGroup = true;
                     break;
                 default:
-                    lastContent += currentCharacter;
+                    if (currentCharacter == '\\') {
+                        escapeCharacter = true;
+                    } else {
+                        this.lastContent += currentCharacter;
+                    }
                     postGroup = false;
                     break;
             }
         }
 
         // Add the last group
-        if (lastContent.length() > 0) {
-            this.addNode(nodes, new Node(lastContent));
-        }
+        this.terminateLastContent();
 
         return nodes;
     }
 
-    private void addNode(List<Node> nodes, Node nodeToAdd) {
-        if (nodes.size() > 0 && nodes.get(nodes.size() - 1) instanceof OrNode) {
-            OrNode lastOrNode = (OrNode) nodes.get(nodes.size() - 1);
+    private void addNode(Node nodeToAdd) {
+        if (this.nodes.size() > 0 && this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
+            OrNode lastOrNode = (OrNode) this.nodes.get(this.nodes.size() - 1);
             lastOrNode.addNodeToLastPath(nodeToAdd);
         } else {
-            nodes.add(nodeToAdd);
+            this.nodes.add(nodeToAdd);
         }
     }
 
-    private Node getLastNode(List<Node> nodes) {
-        if (nodes.get(nodes.size() - 1) instanceof OrNode) {
-            OrNode lastOrNode = (OrNode) nodes.get(nodes.size() - 1);
+    private Node getLastNode() {
+        if (this.nodes.size() <= 0) {
+            return null;
+        }
+        if (this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
+            OrNode lastOrNode = (OrNode) this.nodes.get(this.nodes.size() - 1);
             return lastOrNode.getLastNode();
         } else {
-            return nodes.get(nodes.size() - 1);
+            return this.nodes.get(this.nodes.size() - 1);
         }
+    }
+
+    private void terminateLastContent() {
+        if (this.lastContent.length() > 0) {
+            this.addNode(new Node(this.lastContent));
+            this.lastContent = "";
+        }
+    }
+
+    private void terminateLastCharacterOrThrow() {
+        if (this.lastContent.length() <= 0) {
+            throw new RuntimeException();
+        }
+        if (this.lastContent.length() > 1) {
+            this.addNode(new Node(this.lastContent.substring(0, lastContent.length() - 2)));
+        }
+        this.addNode(new Node(this.lastContent.substring(lastContent.length() - 1)));
+        this.lastContent = "";
     }
 
 }

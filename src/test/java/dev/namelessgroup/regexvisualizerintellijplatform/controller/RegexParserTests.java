@@ -10,17 +10,16 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RegexParserTests {
 
     @Test
     @DisplayName("Basic triple OR regex")
     public void regexOne() {
-        RegexParser parser = new RegexParser();
-        List<Node> nodes = parser.buildRegexNodes("a(b)|s[9sd]|123");
-        System.out.println(nodes);
-        fail();
+        RegexParser parser = new RegexParser("a(b)|s[9sd]|123");
+        List<Node> nodes = parser.buildRegexNodes();
+        assertEquals("[OrNode(Node(a),GroupNode(Node(b)) | Node(s),OneOfNode(9sd) | Node(123))]", nodes.toString());
     }
 
     @Test
@@ -33,7 +32,7 @@ public class RegexParserTests {
         frame.add(new JScrollPane(l));
 
         long start = System.currentTimeMillis();
-        List<Node> graph = new RegexParser().buildRegexNodes("a(b)|s[9sd]|123");
+        List<Node> graph = new RegexParser("a(b)|s[9sd]|123").buildRegexNodes();
         long parse = System.currentTimeMillis();
         Image image = RegExImageFactory.createImage(graph);
         long imageGen = System.currentTimeMillis();
