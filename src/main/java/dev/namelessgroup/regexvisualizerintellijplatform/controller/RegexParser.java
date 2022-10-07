@@ -4,6 +4,7 @@ import dev.namelessgroup.regexvisualizerintellijplatform.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.PatternSyntaxException;
 
 public class RegexParser {
 
@@ -19,15 +20,31 @@ public class RegexParser {
         this.lastContent = "";
     }
 
-    public List<Node> buildRegexNodes() throws RuntimeException {
+    public List<Node> buildRegexNodes() throws PatternSyntaxException {
         boolean postGroup = false;
         boolean escapeCharacter = false;
+        boolean quote = false;
 
         for (int i = 0; i < this.regex.length(); i++) {
             char currentCharacter = this.regex.charAt(i);
 
+            if (quote) {
+                if (currentCharacter == 'E' && this.regex.charAt(i - 1) == '\\') {
+                    quote = false;
+                } else {
+                    this.lastContent += currentCharacter;
+                }
+            }
+
             if (escapeCharacter) {
-                this.lastContent += escapeCharacter;
+                switch (currentCharacter) {
+                    case 'Q':
+                        quote = true;
+                        break;
+                    default:
+                        this.lastContent += currentCharacter;
+                        break;
+                }
                 escapeCharacter = false;
             }
 
@@ -35,7 +52,7 @@ public class RegexParser {
                 case '|':
                     this.terminateLastContent();
 
-                    if (this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
+                    if (this.nodes.size() > 0 && this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
                         // We already have an or node, we need to start a new path
                         ((OrNode) this.nodes.get(this.nodes.size() - 1)).addNewPath();
                     } else {
@@ -69,6 +86,11 @@ public class RegexParser {
                     postGroup = false;
                     break;
                 case '+':
+                    if (lazySearchable.contains(regex.charAt(i - 1)) && regex.charAt(i - 2) != '+') {
+                        // This is our second + in a row, needed for "possessive" search - we can safely ignore it
+                        continue;
+                    }
+
                     if (!postGroup) {
                         this.terminateLastCharacterOrThrow();
                     }
@@ -92,6 +114,9 @@ public class RegexParser {
                             break;
                         }
                         k++;
+                    }
+                    if (this.regex.charAt(k) != ']') {
+                        throw new PatternSyntaxException("Missing closing bracket", this.regex, -1);
                     }
 
                     if (this.regex.charAt(i + 1) == '^') {
@@ -122,8 +147,35 @@ public class RegexParser {
                         }
                         groupK++;
                     }
+                    if (amountOpenBrackets > 0 || this.regex.charAt(groupK) != ')') {
+                        throw new PatternSyntaxException("Missing closing bracket", this.regex, -1);
+                    }
 
-                    this.addNode(new GroupNode(new RegexParser(this.regex.substring(groupJ, groupK)).buildRegexNodes()));
+                    boolean isCapturingGroup = true;
+
+                    // Checking for weird thing's at the start of the group
+                    if (this.regex.charAt(groupJ) == '?') {
+                        groupJ++;
+                        if (this.regex.charAt(groupJ) == ':') {
+                            groupJ++;
+                            isCapturingGroup = false;
+                        } else {
+                            if (this.regex.charAt(groupJ) == '<') {
+                                groupJ++;
+                            }
+                            if (this.regex.charAt(groupJ) == '=') {
+                                groupJ++;
+                            } else if (this.regex.charAt(groupJ) == '!') {
+                                groupJ++;
+                            }
+                        }
+                    }
+
+                    if (isCapturingGroup) {
+                        this.addNode(new GroupNode(new RegexParser(this.regex.substring(groupJ, groupK)).buildRegexNodes()));
+                    } else {
+                        this.addNode(new NonCapturingGroupNode(new RegexParser(this.regex.substring(groupJ, groupK)).buildRegexNodes()));
+                    }
                     i = groupK;
                     postGroup = true;
                     break;
@@ -174,7 +226,7 @@ public class RegexParser {
 
     private void terminateLastCharacterOrThrow() {
         if (this.lastContent.length() <= 0) {
-            throw new RuntimeException();
+            throw new PatternSyntaxException("Nothing repeat", this.regex, -1);
         }
         if (this.lastContent.length() > 1) {
             this.addNode(new Node(this.lastContent.substring(0, lastContent.length() - 2)));
