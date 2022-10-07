@@ -3,6 +3,7 @@ package dev.namelessgroup.regexvisualizerintellijplatform.ui;
 import com.intellij.ui.JBColor;
 import com.intellij.util.ui.ImageUtil;
 import dev.namelessgroup.regexvisualizerintellijplatform.model.*;
+import dev.namelessgroup.regexvisualizerintellijplatform.ui.settings.RegExImageQualitySettings;
 import org.apache.commons.lang.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,21 +18,27 @@ import java.util.List;
  */
 public final class RegExImageFactory {
 
-    private static final int SCALING_FACTOR = 2;
-
     // Font data
-    private static final Font CONTENT_FONT = new Font("JetBrains Mono", Font.PLAIN, 18 * SCALING_FACTOR);
-    private static final FontMetrics CONTENT_FONT_METRICS = getFontMetrics(CONTENT_FONT);
-    private static final Font INFO_FONT = new Font("JetBrains Mono", Font.PLAIN, 14 * SCALING_FACTOR);
-    private static final FontMetrics INFO_FONT_METRICS = getFontMetrics(INFO_FONT);
+    private static Font DEFAULT_CONTENT_FONT = new Font("JetBrains Mono", Font.PLAIN, 18);
+    private static Font CONTENT_FONT = new Font("JetBrains Mono", Font.PLAIN, 18);
+    private static FontMetrics CONTENT_FONT_METRICS = getFontMetrics(CONTENT_FONT);
+    private static Font DEFAULT_INFO_FONT = new Font("JetBrains Mono", Font.PLAIN, 14);
+    private static Font INFO_FONT = new Font("JetBrains Mono", Font.PLAIN, 14);
+    private static FontMetrics INFO_FONT_METRICS = getFontMetrics(INFO_FONT);
 
     // Dimensions
-    private static final int LINE_BASE_LENGTH = 8 * SCALING_FACTOR;
-    private static final int TEXT_SIDE_ROOM = 7 * SCALING_FACTOR;
-    private static final int STROKE_WIDTH = 2 * SCALING_FACTOR;
-    private static final int GROUP_SIDE_SPACING = 8 * SCALING_FACTOR;
-    private static final int NODE_STACKING_SPACING = 4 * SCALING_FACTOR;
-    private static final int OUTSIDE_LINE_SPACING = 4 * SCALING_FACTOR;
+    private static final int DEFAULT_LINE_BASE_LENGTH = 8;
+    private static final int DEFAULT_TEXT_SIDE_ROOM = 7;
+    private static final int DEFAULT_STROKE_WIDTH = 2;
+    private static final int DEFAULT_GROUP_SIDE_SPACING = 8;
+    private static final int DEFAULT_NODE_STACKING_SPACING = 4;
+    private static final int DEFAULT_OUTSIDE_LINE_SPACING = 4;
+    private static int LINE_BASE_LENGTH = 8;
+    private static int TEXT_SIDE_ROOM = 7;
+    private static int STROKE_WIDTH = 2;
+    private static int GROUP_SIDE_SPACING = 8;
+    private static int NODE_STACKING_SPACING = 4;
+    private static int OUTSIDE_LINE_SPACING = 4;
 
     // Colors
     private static Color NODE_COLOR = makeTransparent(JBColor.ORANGE, 200, 200);
@@ -40,6 +47,7 @@ public final class RegExImageFactory {
     private static Color LINE_COLOR = JBColor.GRAY;
     private static Color TEXT_COLOR = JBColor.BLACK;
     private static Color END_NODE_COLOR = JBColor.BLACK;
+    private static RegExImageQualitySettings QUALITY = RegExImageQualitySettings.MEDIUM;
 
     /**
      * Stores the runtime variables for calculating the size and position of the nodes and image dimensions
@@ -66,11 +74,29 @@ public final class RegExImageFactory {
      * @return Image of the graph
      */
     public static @NotNull Image createImage(List<Node> nodes) {
-        return createImage(nodes,
-                makeTransparent(JBColor.ORANGE, 200, 200),
-                makeTransparent(JBColor.RED, 200, 200),
-                makeTransparent(JBColor.YELLOW, 40, 40),
-                JBColor.GRAY, JBColor.BLACK, JBColor.BLACK);
+        applyScaling();
+        // calculate data for drawing all nodes
+        FactoryRuntimeData factoryRuntimeData = new FactoryRuntimeData();
+        calcEndNodes(factoryRuntimeData);
+        imageFromNodeStructure(nodes, factoryRuntimeData);
+
+        BufferedImage image = ImageUtil.createImage(factoryRuntimeData.TOTAL_WIDTH, factoryRuntimeData.MAX_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // draw nodes
+        for (ImageNode node : factoryRuntimeData.nodes) {
+            node.draw(g);
+        }
+        drawEndNodes(g, factoryRuntimeData);
+        g.dispose();
+
+        // scaling ensures the image is not as pixelated
+        if (QUALITY.getScalingFactor() == 1) {
+            return image;
+        }
+        return image.getScaledInstance(image.getWidth() / QUALITY.getScalingFactor(), image.getHeight() / QUALITY.getScalingFactor(), Image.SCALE_SMOOTH);
     }
 
     /**
@@ -84,34 +110,43 @@ public final class RegExImageFactory {
      * @param endNodeColor Color of start and end node
      * @return Image of the graph
      */
-    public static @NotNull Image createImage(List<Node> nodes, Color nodeColor, Color optionNodeColor, Color groupNodeColor, Color lineColor, Color textColor, Color endNodeColor) {
+    public static @NotNull Image createImage(List<Node> nodes, Color nodeColor, Color optionNodeColor, Color groupNodeColor, Color lineColor, Color textColor, Color endNodeColor, RegExImageQualitySettings quality) {
+        setSettings(nodeColor, optionNodeColor, groupNodeColor, lineColor, textColor, endNodeColor, quality);
+
+        return createImage(nodes);
+    }
+
+    private static void setSettings(Color nodeColor, Color optionNodeColor, Color groupNodeColor, Color lineColor, Color textColor, Color endNodeColor, RegExImageQualitySettings qualitySettings) {
+        QUALITY = qualitySettings;
         NODE_COLOR = nodeColor;
         OPTION_NODE_COLOR = optionNodeColor;
         GROUP_NODE_COLOR = groupNodeColor;
         LINE_COLOR = lineColor;
         TEXT_COLOR = textColor;
         END_NODE_COLOR = endNodeColor;
+    }
 
-        // calculate data for drawing all nodes
-        FactoryRuntimeData factoryRuntimeData = new FactoryRuntimeData();
-        calcEndNodes(factoryRuntimeData);
-        imageFromNodeStructure(nodes, factoryRuntimeData);
+    private static void applyScaling() {
+        LINE_BASE_LENGTH = DEFAULT_LINE_BASE_LENGTH * QUALITY.getScalingFactor();
+        TEXT_SIDE_ROOM = DEFAULT_TEXT_SIDE_ROOM * QUALITY.getScalingFactor();
+        STROKE_WIDTH = DEFAULT_STROKE_WIDTH * QUALITY.getScalingFactor();
+        GROUP_SIDE_SPACING = DEFAULT_GROUP_SIDE_SPACING * QUALITY.getScalingFactor();
+        NODE_STACKING_SPACING = DEFAULT_NODE_STACKING_SPACING * QUALITY.getScalingFactor();
+        OUTSIDE_LINE_SPACING = DEFAULT_OUTSIDE_LINE_SPACING * QUALITY.getScalingFactor();
 
-        BufferedImage image = ImageUtil.createImage(factoryRuntimeData.TOTAL_WIDTH, factoryRuntimeData.MAX_HEIGHT, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = image.createGraphics();
+        CONTENT_FONT = DEFAULT_CONTENT_FONT.deriveFont((float) (DEFAULT_CONTENT_FONT.getSize() * QUALITY.getScalingFactor()));
+        CONTENT_FONT_METRICS = getFontMetrics(CONTENT_FONT);
+        INFO_FONT = DEFAULT_INFO_FONT.deriveFont((float) (DEFAULT_INFO_FONT.getSize() * QUALITY.getScalingFactor()));
+        INFO_FONT_METRICS = getFontMetrics(INFO_FONT);
+    }
 
-        // draw nodes
-        for (ImageNode node : factoryRuntimeData.nodes) {
-            node.draw(g);
-        }
-        drawEndNodes(g, factoryRuntimeData);
-        g.dispose();
-
-        // scaling ensures the image is not as pixelated
-        if (SCALING_FACTOR == 1) {
-            return image;
-        }
-        return image.getScaledInstance(image.getWidth() / SCALING_FACTOR, image.getHeight() / SCALING_FACTOR, Image.SCALE_SMOOTH);
+    private static void applySettings(Graphics2D g) {
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, QUALITY.getAntialiasing());
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, QUALITY.getTextAntialiasing());
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, QUALITY.getRendering());
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, QUALITY.getStrokeControl());
+        g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, QUALITY.getFractionalMetrics());
+        g.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, QUALITY.getAlphaInterpolation());
     }
 
     /**
