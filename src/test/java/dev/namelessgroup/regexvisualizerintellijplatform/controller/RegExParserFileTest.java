@@ -20,8 +20,8 @@ public class RegExParserFileTest {
     public void testRegexes() {
         lines = new LinkedList<>();
         readFile("regexTest.txt");
-        // readFile("SupplementaryTestCases.txt");
-        // readFile("BMPTestCases.txt");
+        readFile("SupplementaryTestCases.txt");
+        readFile("BMPTestCases.txt");
 
         fails = new ArrayList<>();
         System.out.println("Starting test of " + lines.size() + " regexes");
