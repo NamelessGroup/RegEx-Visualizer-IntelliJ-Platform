@@ -4,6 +4,7 @@ import dev.namelessgroup.regexvisualizerintellijplatform.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.PatternSyntaxException;
 
 public class RegexParser {
 
@@ -19,7 +20,7 @@ public class RegexParser {
         this.lastContent = "";
     }
 
-    public List<Node> buildRegexNodes() throws RuntimeException {
+    public List<Node> buildRegexNodes() throws PatternSyntaxException {
         boolean postGroup = false;
         boolean escapeCharacter = false;
         boolean quote = false;
@@ -114,6 +115,9 @@ public class RegexParser {
                         }
                         k++;
                     }
+                    if (this.regex.charAt(k) != ']') {
+                        throw new PatternSyntaxException("Missing closing bracket", this.regex, -1);
+                    }
 
                     if (this.regex.charAt(i + 1) == '^') {
                         this.addNode(new NoneOfNode(this.regex.substring(j, k)));
@@ -142,6 +146,9 @@ public class RegexParser {
                             break;
                         }
                         groupK++;
+                    }
+                    if (amountOpenBrackets > 0 || this.regex.charAt(groupK) != ')') {
+                        throw new PatternSyntaxException("Missing closing bracket", this.regex, -1);
                     }
 
                     boolean isCapturingGroup = true;
@@ -219,7 +226,7 @@ public class RegexParser {
 
     private void terminateLastCharacterOrThrow() {
         if (this.lastContent.length() <= 0) {
-            throw new RuntimeException();
+            throw new PatternSyntaxException("Nothing repeat", this.regex, -1);
         }
         if (this.lastContent.length() > 1) {
             this.addNode(new Node(this.lastContent.substring(0, lastContent.length() - 2)));
