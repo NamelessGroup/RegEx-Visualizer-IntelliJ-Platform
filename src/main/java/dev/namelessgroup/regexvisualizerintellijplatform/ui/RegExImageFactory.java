@@ -547,7 +547,7 @@ public final class RegExImageFactory {
             }
 
             // draw lines
-            drawEndLines(g2d, f, w - thisW + GROUP_SIDE_SPACING);
+            drawEndLines(g2d, f, (w - thisW) / 2 + GROUP_SIDE_SPACING);
             drawInfoText(g2d, f, "Group " + number, true);
         }
 
