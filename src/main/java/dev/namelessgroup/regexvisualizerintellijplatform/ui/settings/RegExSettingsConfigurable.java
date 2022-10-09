@@ -33,7 +33,14 @@ public class RegExSettingsConfigurable implements Configurable {
         return settingsState.isSaveToolWindowTabs() != component.isSaveToolWindowTabs()
                 || settingsState.isShowPopUpOnRegEx() != component.isShowPopUpOnRegEx()
                 || settingsState.isShowPopUpOnReference() != component.isShowPopUpOnReference()
-                || settingsState.isShowPopUpAboveCode() != component.isShowPopupAboveCode();
+                || settingsState.isShowPopUpAboveCode() != component.isShowPopupAboveCode()
+                || settingsState.getNodeColor().getRGB() != component.getNodeColor().getRGB()
+                || settingsState.getOptionNodeColor().getRGB() != component.getOptionNodeColor().getRGB()
+                || settingsState.getGroupNodeColor().getRGB() != component.getGroupNodeColor().getRGB()
+                || settingsState.getLineColor().getRGB() != component.getLineColor().getRGB()
+                || settingsState.getTextColor().getRGB() != component.getTextColor().getRGB()
+                || settingsState.getEndNodeColor().getRGB() != component.getEndNodeColor().getRGB()
+                || settingsState.getImageQualitySettings() != component.getRegExImageQuality();
     }
 
     @Override
@@ -44,6 +51,13 @@ public class RegExSettingsConfigurable implements Configurable {
         settingsState.setShowPopUpOnRegEx(component.isShowPopUpOnRegEx());
         settingsState.setShowPopUpOnReference(component.isShowPopUpOnReference());
         settingsState.setShowPopUpAboveCode(component.isShowPopupAboveCode());
+        settingsState.setImageQualitySettings(component.getRegExImageQuality());
+        settingsState.setNodeColor(component.getNodeColor());
+        settingsState.setOptionNodeColor(component.getOptionNodeColor());
+        settingsState.setGroupNodeColor(component.getGroupNodeColor());
+        settingsState.setLineColor(component.getLineColor());
+        settingsState.setTextColor(component.getTextColor());
+        settingsState.setEndNodeColor(component.getEndNodeColor());
     }
 
     @Override
@@ -54,5 +68,14 @@ public class RegExSettingsConfigurable implements Configurable {
         component.setShowPopUpOnRegEx(settingsState.isShowPopUpOnRegEx());
         component.setShowPopUpOnReference(settingsState.isShowPopUpOnReference());
         component.setShowPopupAboveCode(settingsState.isShowPopUpAboveCode());
+
+        component.setRegExImageQuality(settingsState.getImageQualitySettings());
+        component.setNodeColor(settingsState.getNodeColor());
+        component.setOptionNodeColor(settingsState.getOptionNodeColor());
+        component.setGroupNodeColor(settingsState.getGroupNodeColor());
+        component.setLineColor(settingsState.getLineColor());
+        component.setTextColor(settingsState.getTextColor());
+        component.setEndNodeColor(settingsState.getEndNodeColor());
+        component.updateImage();
     }
 }

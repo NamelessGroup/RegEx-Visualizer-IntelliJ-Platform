@@ -13,16 +13,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Utility class for transforming a graph given by {@link org.intellij.lang.regexp.RegExpParser the parser} into an {@link Image}
+ * Utility class for transforming a graph given by {@link org.intellij.lang.regexp.RegExpParser the parser} into an {@link Image}.
  * @version 1.0
  */
 public final class RegExImageFactory {
 
     // Font data
-    private static Font DEFAULT_CONTENT_FONT = new Font("JetBrains Mono", Font.PLAIN, 18);
+    private final static Font DEFAULT_CONTENT_FONT = new Font("JetBrains Mono", Font.PLAIN, 18);
     private static Font CONTENT_FONT = new Font("JetBrains Mono", Font.PLAIN, 18);
     private static FontMetrics CONTENT_FONT_METRICS = getFontMetrics(CONTENT_FONT);
-    private static Font DEFAULT_INFO_FONT = new Font("JetBrains Mono", Font.PLAIN, 14);
+    private final static Font DEFAULT_INFO_FONT = new Font("JetBrains Mono", Font.PLAIN, 14);
     private static Font INFO_FONT = new Font("JetBrains Mono", Font.PLAIN, 14);
     private static FontMetrics INFO_FONT_METRICS = getFontMetrics(INFO_FONT);
 
@@ -41,9 +41,9 @@ public final class RegExImageFactory {
     private static int OUTSIDE_LINE_SPACING = 4;
 
     // Colors
-    private static Color NODE_COLOR = makeTransparent(JBColor.ORANGE, 200, 200);
-    private static Color OPTION_NODE_COLOR = makeTransparent(JBColor.RED, 200, 200);
-    private static Color GROUP_NODE_COLOR = makeTransparent(JBColor.YELLOW, 40, 40);
+    private static Color NODE_COLOR = makeTransparent(JBColor.ORANGE, 200);
+    private static Color OPTION_NODE_COLOR = makeTransparent(JBColor.RED, 200);
+    private static Color GROUP_NODE_COLOR = makeTransparent(JBColor.YELLOW, 40);
     private static Color LINE_COLOR = JBColor.GRAY;
     private static Color TEXT_COLOR = JBColor.BLACK;
     private static Color END_NODE_COLOR = JBColor.BLACK;
@@ -55,16 +55,26 @@ public final class RegExImageFactory {
     private static class FactoryRuntimeData {
         private static int GROUP_COUNT = 1;
         private int TOTAL_WIDTH = 0;
-        private int MAX_HEIGHT = 0;
+        private int MAX_BELOW_LINE = 0;
         private int MAX_LINE_HEIGHT = 0;
         private int CURRENT_X = 0;
         private final List<ImageNode> nodes = new ArrayList<>();
 
+        /**
+         *
+         * @param w width of added node
+         * @param h height of added node
+         * @param lH line height of added node
+         */
         private void updateValues(int w, int h, int lH) {
             TOTAL_WIDTH += w;
-            MAX_HEIGHT = Math.max(MAX_HEIGHT, h);
+            MAX_BELOW_LINE = Math.max(MAX_BELOW_LINE, h - lH);
             MAX_LINE_HEIGHT = Math.max(MAX_LINE_HEIGHT, lH);
             CURRENT_X += w;
+        }
+
+        public int getMaxHeight() {
+            return MAX_LINE_HEIGHT + MAX_BELOW_LINE;
         }
     }
 
@@ -80,10 +90,9 @@ public final class RegExImageFactory {
         calcEndNodes(factoryRuntimeData);
         imageFromNodeStructure(nodes, factoryRuntimeData);
 
-        BufferedImage image = ImageUtil.createImage(factoryRuntimeData.TOTAL_WIDTH, factoryRuntimeData.MAX_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = ImageUtil.createImage(factoryRuntimeData.TOTAL_WIDTH, factoryRuntimeData.getMaxHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
-
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        applySettings(g);
 
         // draw nodes
         for (ImageNode node : factoryRuntimeData.nodes) {
@@ -111,19 +120,15 @@ public final class RegExImageFactory {
      * @return Image of the graph
      */
     public static @NotNull Image createImage(List<Node> nodes, Color nodeColor, Color optionNodeColor, Color groupNodeColor, Color lineColor, Color textColor, Color endNodeColor, RegExImageQualitySettings quality) {
-        setSettings(nodeColor, optionNodeColor, groupNodeColor, lineColor, textColor, endNodeColor, quality);
-
-        return createImage(nodes);
-    }
-
-    private static void setSettings(Color nodeColor, Color optionNodeColor, Color groupNodeColor, Color lineColor, Color textColor, Color endNodeColor, RegExImageQualitySettings qualitySettings) {
-        QUALITY = qualitySettings;
+        QUALITY = quality;
         NODE_COLOR = nodeColor;
         OPTION_NODE_COLOR = optionNodeColor;
         GROUP_NODE_COLOR = groupNodeColor;
         LINE_COLOR = lineColor;
         TEXT_COLOR = textColor;
         END_NODE_COLOR = endNodeColor;
+
+        return createImage(nodes);
     }
 
     private static void applyScaling() {
@@ -551,7 +556,7 @@ public final class RegExImageFactory {
 
             x = factoryRuntimeData.CURRENT_X;
             w = contentFactoryRuntimeData.TOTAL_WIDTH + (capturing ? 2 * GROUP_SIDE_SPACING + 2 * LINE_BASE_LENGTH : 0);
-            h = contentFactoryRuntimeData.MAX_HEIGHT + (capturing ? 2 * GROUP_SIDE_SPACING : 0);
+            h = contentFactoryRuntimeData.getMaxHeight() + (capturing ? 2 * GROUP_SIDE_SPACING : 0);
             lineHeight = contentFactoryRuntimeData.MAX_LINE_HEIGHT + (capturing ? GROUP_SIDE_SPACING : 0);
             factoryRuntimeData.updateValues(w, h, lineHeight);
             calcTextInfo("Group XXX", true);
@@ -566,7 +571,7 @@ public final class RegExImageFactory {
         @Override
         protected void drawGroupNode(Graphics2D g2d, FactoryRuntimeData f, int number) {
             int thisW = contentFactoryRuntimeData.TOTAL_WIDTH + 2 * GROUP_SIDE_SPACING;
-            int thisH = contentFactoryRuntimeData.MAX_HEIGHT + 2 * GROUP_SIDE_SPACING;
+            int thisH = contentFactoryRuntimeData.getMaxHeight() + 2 * GROUP_SIDE_SPACING;
             int thisArc = thisH / 3;
             int thisX = x + getPositionForCenterPlacement(w, thisW);
             // draw rectangle
@@ -629,7 +634,7 @@ public final class RegExImageFactory {
                 FactoryRuntimeData f = new FactoryRuntimeData();
                 imageFromNodeStructure(row, f);
                 w = Math.max(w, f.TOTAL_WIDTH);
-                h += f.MAX_HEIGHT;
+                h += f.getMaxHeight();
                 children.add(f);
             }
             w +=  2 * sideSpace;
@@ -666,7 +671,7 @@ public final class RegExImageFactory {
                     g2d.drawArc(x + sideSpace / 2, cF.MAX_LINE_HEIGHT - sideSpace / 2, sideSpace / 2, sideSpace / 2, -90, -90); // left arc
                     g2d.drawArc(x + w - sideSpace, cF.MAX_LINE_HEIGHT - sideSpace / 2, sideSpace / 2, sideSpace / 2, 0, -90); // right arc
                 }
-                curY += cF.MAX_HEIGHT + NODE_STACKING_SPACING;
+                curY += cF.getMaxHeight() + NODE_STACKING_SPACING;
             }
 
             int firstLH = children.get(0).MAX_LINE_HEIGHT;
@@ -698,7 +703,7 @@ public final class RegExImageFactory {
         f.CURRENT_X += size + 2 * LINE_BASE_LENGTH;
         f.TOTAL_WIDTH += 2 * size + (int)(2.5 * LINE_BASE_LENGTH) + STROKE_WIDTH;
         f.MAX_LINE_HEIGHT = Math.max(f.MAX_LINE_HEIGHT, size / 2);
-        f.MAX_HEIGHT = Math.max(f.MAX_HEIGHT, size);
+        f.MAX_BELOW_LINE = size / 2;
     }
 
     /**
@@ -755,12 +760,11 @@ public final class RegExImageFactory {
     /**
      * Creates a new JBColor with the given alpha values for the light and dark theme
      * @param color Base color
-     * @param lightAlpha Alpha-value for light theme
-     * @param darkAlpha Alpha-value for dark theme
+     * @param alpha Alpha value
      * @return Transparent color
      */
-    private static JBColor makeTransparent(JBColor color, int lightAlpha, int darkAlpha) {
-        return new JBColor(new Color(color.brighter().getRed(), color.brighter().getGreen(), color.brighter().getBlue(), lightAlpha), new Color(color.darker().getRed(), color.darker().getGreen(), color.darker().getBlue(), darkAlpha));
+    public static JBColor makeTransparent(JBColor color, int alpha) {
+        return new JBColor(new Color(color.brighter().getRed(), color.brighter().getGreen(), color.brighter().getBlue(), alpha), new Color(color.darker().getRed(), color.darker().getGreen(), color.darker().getBlue(), alpha));
     }
 
     /**

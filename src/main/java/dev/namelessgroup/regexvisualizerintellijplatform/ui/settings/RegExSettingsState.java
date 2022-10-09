@@ -4,9 +4,14 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.components.Storage;
+import com.intellij.ui.JBColor;
 import com.intellij.util.xmlb.XmlSerializerUtil;
+import com.intellij.util.xmlb.annotations.OptionTag;
+import dev.namelessgroup.regexvisualizerintellijplatform.ui.RegExImageFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.awt.*;
 
 /**
  * Stores the settings during the plugin running and stores them on the hard-drive <br>
@@ -23,6 +28,19 @@ public class RegExSettingsState implements PersistentStateComponent<RegExSetting
     private boolean showPopUpOnRegEx = true;
     private boolean showPopUpOnReference = true;
     private boolean showPopUpAboveCode = true;
+    @OptionTag(converter = ColorConverter.class)
+    private Color nodeColor = RegExImageFactory.makeTransparent(JBColor.ORANGE, 200);
+    @OptionTag(converter = ColorConverter.class)
+    private Color optionNodeColor = RegExImageFactory.makeTransparent(JBColor.RED, 200);
+    @OptionTag(converter = ColorConverter.class)
+    private Color groupNodeColor = RegExImageFactory.makeTransparent(JBColor.YELLOW, 40);
+    @OptionTag(converter = ColorConverter.class)
+    private Color lineColor = JBColor.GRAY;
+    @OptionTag(converter = ColorConverter.class)
+    private Color textColor = JBColor.BLACK;
+    @OptionTag(converter = ColorConverter.class)
+    private Color endNodeColor = JBColor.BLACK;
+    private RegExImageQualitySettings imageQualitySettings = RegExImageQualitySettings.MEDIUM;
 
     /**
      * Returns the instance of the settings according to the Singleton pattern
@@ -74,4 +92,61 @@ public class RegExSettingsState implements PersistentStateComponent<RegExSetting
     public void setShowPopUpOnReference(boolean showPopUpOnReference) {
         this.showPopUpOnReference = showPopUpOnReference;
     }
+
+    public Color getOptionNodeColor() {
+       return optionNodeColor;
+    }
+
+    public void setOptionNodeColor(Color optionNodeColor) {
+        this.optionNodeColor = optionNodeColor;
+    }
+
+    public Color getGroupNodeColor() {
+        return groupNodeColor;
+    }
+
+    public void setGroupNodeColor(Color groupNodeColor) {
+        this.groupNodeColor = groupNodeColor;
+    }
+
+    public Color getLineColor() {
+       return lineColor;
+    }
+
+    public void setLineColor(Color lineColor) {
+        this.lineColor = lineColor;
+    }
+
+    public Color getTextColor() {
+        return textColor;
+    }
+
+    public void setTextColor(Color textColor) {
+        this.textColor = textColor;
+    }
+
+    public Color getEndNodeColor() {
+        return endNodeColor;
+    }
+
+    public void setEndNodeColor(Color endNodeColor) {
+        this.endNodeColor = endNodeColor;
+    }
+
+    public Color getNodeColor() {
+        return nodeColor;
+    }
+
+    public void setNodeColor(Color nodeColor) {
+        this.nodeColor = nodeColor;
+    }
+
+    public RegExImageQualitySettings getImageQualitySettings() {
+        return imageQualitySettings;
+    }
+
+    public void setImageQualitySettings(RegExImageQualitySettings imageQualitySettings) {
+        this.imageQualitySettings = imageQualitySettings;
+    }
+
 }
