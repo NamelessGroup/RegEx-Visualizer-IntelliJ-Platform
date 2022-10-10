@@ -93,6 +93,7 @@ public final class RegExImageFactory {
         BufferedImage image = ImageUtil.createImage(factoryRuntimeData.TOTAL_WIDTH, factoryRuntimeData.getMaxHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
         applySettings(g);
+        FactoryRuntimeData.GROUP_COUNT = 1;
 
         // draw nodes
         for (ImageNode node : factoryRuntimeData.nodes) {
@@ -648,6 +649,8 @@ public final class RegExImageFactory {
 
         @Override
         protected void drawStackNodes(Graphics2D g2d, FactoryRuntimeData f) {
+            boolean arcUp = false;
+            boolean arcDown = false;
             int sideSpace = 3 * LINE_BASE_LENGTH;
             int curY = factoryRuntimeData.MAX_LINE_HEIGHT - lineHeight;
             for (FactoryRuntimeData cF : children) {
@@ -662,34 +665,57 @@ public final class RegExImageFactory {
                 int dif = cF.MAX_LINE_HEIGHT - factoryRuntimeData.MAX_LINE_HEIGHT;
                 if (dif == 0) {
                     drawEndLines(g2d, f, sideSpace);
+                } else if (Math.abs(dif) < sideSpace / 4) {
+                    drawSymmetricLines(g2d, sideSpace / 2, sideSpace / 2, cF.MAX_LINE_HEIGHT);
                 } else if (dif < 0) {
                     // above middle
+                    arcUp = true;
                     g2d.drawArc(x + sideSpace / 2, cF.MAX_LINE_HEIGHT, sideSpace / 2, sideSpace / 2, 90, 90); // left arc
                     g2d.drawArc(x + w - sideSpace, cF.MAX_LINE_HEIGHT, sideSpace / 2, sideSpace / 2, 0, 90); // right arc
                 } else {
                     // below middle
+                    arcDown = true;
                     g2d.drawArc(x + sideSpace / 2, cF.MAX_LINE_HEIGHT - sideSpace / 2, sideSpace / 2, sideSpace / 2, -90, -90); // left arc
                     g2d.drawArc(x + w - sideSpace, cF.MAX_LINE_HEIGHT - sideSpace / 2, sideSpace / 2, sideSpace / 2, 0, -90); // right arc
                 }
-                curY += cF.getMaxHeight() + NODE_STACKING_SPACING;
+                curY = cF.getMaxHeight() + NODE_STACKING_SPACING;
             }
 
             int firstLH = children.get(0).MAX_LINE_HEIGHT;
             int lastLH = children.get(children.size() - 1).MAX_LINE_HEIGHT;
+            int arcH;
 
-            // left side
-            g2d.drawLine(x + sideSpace / 2, firstLH + sideSpace / 4, x  + sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT - sideSpace / 2 + 2 * STROKE_WIDTH); // top line down
-            g2d.drawLine(x + sideSpace / 2, lastLH - sideSpace / 4, x + sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT + sideSpace / 2 - 2 * STROKE_WIDTH); // bottom line up
-            g2d.drawArc(x, factoryRuntimeData.MAX_LINE_HEIGHT - sideSpace / 2, sideSpace / 2,  sideSpace/ 2, -90, 90); // top arc
-            g2d.drawArc(x, factoryRuntimeData.MAX_LINE_HEIGHT, sideSpace / 2,  sideSpace/ 2, 90, -90); // bottom arc
+            // top
+            if (arcUp) {
+                // left
+                g2d.drawLine(x + sideSpace / 2, firstLH + sideSpace / 4, x  + sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT - sideSpace / 2 + 2 * STROKE_WIDTH); // top line down
+                //right
+                g2d.drawLine(x + w - sideSpace / 2, firstLH + sideSpace / 4, x + w - sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT - sideSpace / 2 + 2 * STROKE_WIDTH); // top line down
 
-            // right side
-            g2d.drawLine(x + w - sideSpace / 2, firstLH + sideSpace / 4, x + w - sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT - sideSpace / 2 + 2 * STROKE_WIDTH); // top line down
-            g2d.drawLine(x + w - sideSpace / 2, lastLH - sideSpace / 4, x + w - sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT + sideSpace / 2 - 2 * STROKE_WIDTH); // bottom line down
-            g2d.drawArc(x + w - sideSpace / 2, f.MAX_LINE_HEIGHT - sideSpace / 2, sideSpace / 2,  sideSpace/ 2, 180, 90); // top arc
-            g2d.drawArc(x + w - sideSpace / 2, f.MAX_LINE_HEIGHT, sideSpace / 2,  sideSpace/ 2, 180, -90); // bottom arc
+                arcH = sideSpace / 2;
+
+            } else {
+                arcH = (factoryRuntimeData.MAX_LINE_HEIGHT - firstLH);
+            }
+            g2d.drawArc(x, factoryRuntimeData.MAX_LINE_HEIGHT - arcH, sideSpace / 2,  arcH, -90, 90); // left arc
+            g2d.drawArc(x + w - sideSpace / 2, f.MAX_LINE_HEIGHT - arcH, sideSpace / 2,  arcH, 180, 90); // right arc
+
+
+            if (arcDown) {
+                // left side
+                g2d.drawLine(x + sideSpace / 2, lastLH - sideSpace / 4, x + sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT + sideSpace / 2 - 2 * STROKE_WIDTH); // bottom line up
+                // right side
+                g2d.drawLine(x + w - sideSpace / 2, lastLH - sideSpace / 4, x + w - sideSpace / 2, factoryRuntimeData.MAX_LINE_HEIGHT + sideSpace / 2 - 2 * STROKE_WIDTH); // bottom line down
+
+                arcH = sideSpace / 2;
+            } else {
+                arcH = (lastLH - factoryRuntimeData.MAX_LINE_HEIGHT);
+            }
+            g2d.drawArc(x, factoryRuntimeData.MAX_LINE_HEIGHT, sideSpace / 2,  arcH, 90, -90); // left arc
+            g2d.drawArc(x + w - sideSpace / 2, f.MAX_LINE_HEIGHT, sideSpace / 2,  arcH, 180, -90); // right arc
+
+
             drawEndLines(g2d, f, 2 * STROKE_WIDTH + 1);
-
 
         }
     }
