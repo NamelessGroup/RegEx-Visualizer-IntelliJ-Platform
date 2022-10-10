@@ -30,6 +30,14 @@
         <postStartupActivity implementation="dev.namelessgroup.regexvisualizerintellijplatform.ui.PostIndexingLoader" />
         <postStartupActivity implementation="dev.namelessgroup.regexvisualizerintellijplatform.ui.PreIndexingLoader" />
 
+        <!-- Tool Window -->
+        <toolWindow
+                factoryClass="dev.namelessgroup.regexvisualizerintellijplatform.ui.toolwindow.RegExToolWindowFactory"
+                id="RegEx Visualizer"
+                anchor="bottom"
+                canCloseContents="true"
+                icon="AllIcons.Nodes.Plugin"/>
+
         <!-- Settings -->
         <projectConfigurable
                 parentId="tools"
