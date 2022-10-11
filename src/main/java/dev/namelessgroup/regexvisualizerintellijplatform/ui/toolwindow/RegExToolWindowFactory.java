@@ -15,6 +15,19 @@ import javax.swing.*;
 public class RegExToolWindowFactory implements ToolWindowFactory, DumbAware {
     private ContentManager contentManager;
     private ToolWindow toolWindow;
+    private static RegExToolWindowFactory instance;
+
+    public RegExToolWindowFactory() {
+        instance = this;
+    }
+
+    public static RegExToolWindowFactory getInstance() {
+        if (instance == null) {
+            instance = new RegExToolWindowFactory();
+        }
+        return instance;
+    }
+
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
@@ -57,12 +70,12 @@ public class RegExToolWindowFactory implements ToolWindowFactory, DumbAware {
     }
 
     private void defaultSetUp() {
-        contentManager.addContent(createNewTab());
+        contentManager.addContent(createNewTab(new RegExToolWindowTab("RegEx")));
         createAddButton();
     }
 
-    private Content createNewTab() {
-        Content content = contentManager.getFactory().createContent(new RegExToolWindowTab(), "RegEx", false);
+    private Content createNewTab(RegExToolWindowTab tab) {
+        Content content = contentManager.getFactory().createContent(tab, tab.getName(), false);
         content.setCloseable(true);
         return content;
     }
@@ -79,10 +92,17 @@ public class RegExToolWindowFactory implements ToolWindowFactory, DumbAware {
     private void plusClicked() {
         Content tab = contentManager.getContent(contentManager.getContents().length - 1);
         assert tab != null;
-        tab.setComponent(new RegExToolWindowTab());
+        RegExToolWindowTab newTab = new RegExToolWindowTab("RegEx");
+        tab.setComponent(newTab);
         tab.setCloseable(true);
-        tab.setDisplayName("RegEx");
+        tab.setDisplayName(newTab.getName());
         createAddButton();
+    }
+
+    public void insertTab(RegExToolWindowTab tab) {
+        contentManager.addContent(createNewTab(tab), contentManager.getContents().length - 1);
+        contentManager.setSelectedContent(contentManager.getContent(contentManager.getContentCount() - 2));
+        toolWindow.show();
     }
 
     private static class PlusButtonTab extends JPanel { }

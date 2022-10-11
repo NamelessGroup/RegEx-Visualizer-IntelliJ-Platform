@@ -13,7 +13,6 @@ import dev.namelessgroup.regexvisualizerintellijplatform.ui.RegExImageFactory;
 import dev.namelessgroup.regexvisualizerintellijplatform.ui.settings.RegExSettingsState;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
 import java.awt.event.MouseEvent;
 
 /**
@@ -40,6 +39,7 @@ public class RegExHoverListener implements EditorMouseMotionListener {
             return;
         }
         if (!e.isOverText() || e.getArea() != EditorMouseEventArea.EDITING_AREA) {
+            hoveredElement = null;
             hidePopUp();
             return;
         }
@@ -47,6 +47,7 @@ public class RegExHoverListener implements EditorMouseMotionListener {
 
         Project project = editor.getProject();
         if (project == null) {
+            hoveredElement = null;
             hidePopUp();
             return;
         }
@@ -76,12 +77,16 @@ public class RegExHoverListener implements EditorMouseMotionListener {
         }
 
         String hoveredString = hoveredElement.getStringContents();
-        Image img = RegExImageFactory.createImage(new RegexParser(hoveredString).buildRegexNodes());
-        RelativePoint point = getDisplayPosition(editor, hoveredElement, settingsState.isShowPopUpAboveCode(), img.getHeight(null));
+
+        RegExPopUpWindow component = new RegExPopUpWindow(
+                RegExImageFactory.createImage(
+                        new RegexParser(hoveredString).buildRegexNodes()),
+                hoveredString);
 
         // Create popup
-        popup = new RegExPopUpWindowBuilder(new RegExPopUpWindow(img))
-                .createPopup();
+        popup = new RegExPopUpWindowBuilder(component).createPopup();
+
+        RelativePoint point = getDisplayPosition(editor, hoveredElement, settingsState.isShowPopUpAboveCode(), component.getHeight());
 
         // Show popup
         popup.show(point);

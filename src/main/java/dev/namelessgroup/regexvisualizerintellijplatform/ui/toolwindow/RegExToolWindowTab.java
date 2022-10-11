@@ -15,7 +15,6 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
 import java.awt.*;
-import java.util.Arrays;
 
 public class RegExToolWindowTab extends JBPanel<RegExToolWindowTab> {
 
@@ -29,11 +28,14 @@ public class RegExToolWindowTab extends JBPanel<RegExToolWindowTab> {
     private final Style testInputNoMatchStyle;
     private final JBLabel imageHolder;
 
+    private final String name;
+
     private final RegExSettingsState settingsState;
 
-    public RegExToolWindowTab() {
+    public RegExToolWindowTab(String name) {
         super(new GridBagLayout());
         settingsState = RegExSettingsState.getInstance();
+        this.name = name;
 
         regExInput = new JBTextField();
         testInput = new JTextPane();
@@ -52,6 +54,11 @@ public class RegExToolWindowTab extends JBPanel<RegExToolWindowTab> {
         testInputNoMatchStyle = testInput.addStyle("noMatch", null);
         StyleConstants.setForeground(testInputNoMatchStyle, JBColor.RED);
         updateImage();
+    }
+
+    public RegExToolWindowTab(String name, String regEx) {
+        this(name);
+        regExInput.setText(regEx);
     }
 
     private JComponent createRegExInputPane() {
@@ -172,6 +179,10 @@ public class RegExToolWindowTab extends JBPanel<RegExToolWindowTab> {
         }
 
 
+    }
+
+    public String getName() {
+        return name;
     }
 
 }
