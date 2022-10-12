@@ -6,7 +6,9 @@ import com.intellij.ui.components.*;
 import com.intellij.util.ui.JBInsets;
 import com.intellij.util.ui.JBUI;
 import dev.namelessgroup.regexvisualizerintellijplatform.controller.RegexParser;
+import dev.namelessgroup.regexvisualizerintellijplatform.controller.RegexParserFactory;
 import dev.namelessgroup.regexvisualizerintellijplatform.controller.RegexUtilites;
+import dev.namelessgroup.regexvisualizerintellijplatform.model.RegexLanguage;
 import dev.namelessgroup.regexvisualizerintellijplatform.ui.RegExImageFactory;
 import dev.namelessgroup.regexvisualizerintellijplatform.ui.settings.RegExSettingsState;
 
@@ -165,7 +167,7 @@ public class RegExToolWindowTab extends JBPanel<RegExToolWindowTab> {
         }
         try {
             imageHolder.setIcon(new ImageIcon(RegExImageFactory.createImage(
-                    new RegexParser(regExInput.getText()).buildRegexNodes(),
+                    RegexParserFactory.getParser(RegexLanguage.JAVA, regExInput.getText()).buildRegexNodes(),
                     settingsState.getNodeColor(),
                     settingsState.getOptionNodeColor(),
                     settingsState.getGroupNodeColor(),

@@ -1,5 +1,6 @@
 package dev.namelessgroup.regexvisualizerintellijplatform.controller;
 
+import dev.namelessgroup.regexvisualizerintellijplatform.model.RegexLanguage;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -27,7 +28,7 @@ public class RegExParserFileTest {
         System.out.println("Starting test of " + lines.size() + " regexes");
         while (!lines.isEmpty()) {
             String line = lines.remove();
-            RegexParser parser = new RegexParser(line);
+            RegexParser parser = RegexParserFactory.getParser(RegexLanguage.JAVA, "a(b)|s[9sd]|123");
             try {
                 parser.buildRegexNodes();
             } catch (Exception e) {

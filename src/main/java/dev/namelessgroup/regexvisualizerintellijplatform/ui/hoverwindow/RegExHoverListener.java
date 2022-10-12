@@ -9,6 +9,8 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.ui.awt.RelativePoint;
 import dev.namelessgroup.regexvisualizerintellijplatform.controller.RegexParser;
+import dev.namelessgroup.regexvisualizerintellijplatform.controller.RegexParserFactory;
+import dev.namelessgroup.regexvisualizerintellijplatform.model.RegexLanguage;
 import dev.namelessgroup.regexvisualizerintellijplatform.ui.RegExImageFactory;
 import dev.namelessgroup.regexvisualizerintellijplatform.ui.settings.RegExSettingsState;
 import org.jetbrains.annotations.NotNull;
@@ -80,7 +82,7 @@ public class RegExHoverListener implements EditorMouseMotionListener {
 
         RegExPopUpWindow component = new RegExPopUpWindow(
                 RegExImageFactory.createImage(
-                        new RegexParser(hoveredString).buildRegexNodes()),
+                        RegexParserFactory.getParser(RegexLanguage.JAVA, hoveredString).buildRegexNodes()),
                 hoveredString);
 
         // Create popup

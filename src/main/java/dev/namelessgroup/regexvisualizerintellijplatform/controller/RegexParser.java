@@ -6,233 +6,197 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.PatternSyntaxException;
 
-public class RegexParser {
+public abstract class RegexParser {
 
-    private static final List<Character> lazySearchable = List.of('?', '*', '+');
+    protected final String regex;
+    protected List<Node> nodes;
+    protected String lastContent;
+    protected boolean postGroup;
+    protected List<Character> groupModifiers;
 
-    private final String regex;
-    private List<Node> nodes;
-    private String lastContent;
-
-    public RegexParser(String regex) {
+    protected RegexParser(String regex) {
         this.regex = regex;
         this.nodes = new ArrayList<>();
         this.lastContent = "";
+        this.postGroup = false;
+        this.groupModifiers = List.of('+', '?', '*');
     }
 
-    public List<Node> buildRegexNodes() throws PatternSyntaxException {
-        boolean postGroup = false;
-        boolean escapeCharacter = false;
-        boolean quote = false;
+    protected RegexParser(String regex, List<Character> groupModifiers) {
+        this.regex = regex;
+        this.nodes = new ArrayList<>();
+        this.lastContent = "";
+        this.postGroup = false;
+        this.groupModifiers = groupModifiers;
+    }
 
+    /**
+     * Building the regex tree
+     */
+    public List<Node> buildRegexNodes() throws PatternSyntaxException {
         for (int i = 0; i < this.regex.length(); i++) {
             char currentCharacter = this.regex.charAt(i);
 
-            if (quote) {
-                if (currentCharacter == 'E' && this.regex.charAt(i - 1) == '\\') {
-                    quote = false;
-                } else {
-                    this.lastContent += currentCharacter;
-                }
+            if (this.handleCharacter(currentCharacter, i)) {
+                this.postGroup = false;
+                continue;
             }
 
-            if (escapeCharacter) {
-                switch (currentCharacter) {
-                    case 'Q':
-                        quote = true;
-                        break;
-                    default:
-                        this.lastContent += currentCharacter;
-                        break;
+            if (this.isGroupModifier(currentCharacter)) {
+                if (!this.postGroup) {
+                    this.terminateLastCharacterOrThrow();
                 }
-                escapeCharacter = false;
+                this.handleGroupModifier(currentCharacter, i);
+                this.postGroup = false;
+                continue;
             }
 
             switch (currentCharacter) {
                 case '|':
                     this.terminateLastContent();
 
-                    if (this.nodes.size() > 0 && this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
-                        // We already have an or node, we need to start a new path
-                        ((OrNode) this.nodes.get(this.nodes.size() - 1)).addNewPath();
-                    } else {
-                        // This is our first or node
-                        OrNode rootOrNode = new OrNode(this.nodes);
-                        this.nodes = new ArrayList<>();
-                        this.nodes.add(rootOrNode);
-                    }
-                    postGroup = false;
+                    this.handleOr(i);
+                    this.postGroup = false;
                     break;
-                case '?':
-                    if (lazySearchable.contains(regex.charAt(i - 1)) && regex.charAt(i - 2) != '?') {
-                        // This is our second ? in a row, needed for "lazy" search - we can safely ignore it
-                        continue;
-                    }
+                    case '\\':
+                        char escapedCharacter = this.regex.charAt(i + 1);
+                        this.handleEscapeCharacter(escapedCharacter, i + 1);
+                        i++;
+                        this.postGroup = false;
+                        break;
+                        case '[':
+                            this.terminateLastContent();
 
-                    if (!postGroup) {
-                        this.terminateLastCharacterOrThrow();
-                    }
-                    Node toMakeOptional = this.getLastNode();
-                    toMakeOptional.setLowerBound(0);
-                    postGroup = false;
-                    break;
-                case '*':
-                    if (!postGroup) {
-                        this.terminateLastCharacterOrThrow();
-                    }
-                    Node toMakeOptionallyRepeating = this.getLastNode();
-                    toMakeOptionallyRepeating.setLowerBound(0);
-                    toMakeOptionallyRepeating.setUpperBound(-1);
-                    postGroup = false;
-                    break;
-                case '+':
-                    if (lazySearchable.contains(regex.charAt(i - 1)) && regex.charAt(i - 2) != '+') {
-                        // This is our second + in a row, needed for "possessive" search - we can safely ignore it
-                        continue;
-                    }
+                            int openingRangeBracket = i;
+                            int closingRangeBracket = this.findMatchingRangeBracket(i);
+                            String rangeContent = this.regex.substring(openingRangeBracket + 1, closingRangeBracket);
 
-                    if (!postGroup) {
-                        this.terminateLastCharacterOrThrow();
-                    }
-                    Node toMakeRepeating = this.getLastNode();
-                    toMakeRepeating.setLowerBound(1);
-                    toMakeRepeating.setUpperBound(-1);
-                    postGroup = false;
-                    break;
-                case '[':
-                    this.terminateLastContent();
-
-                    int j = i + 1;
-                    if (regex.charAt(i + 1) == '^') {
-                        j++;
-                    }
-
-                    // Figuring out how long the bracket is
-                    int k = j;
-                    while (k < this.regex.length()) {
-                        if (this.regex.charAt(k) == ']' && this.regex.charAt(k - 1) != '\\') {
+                            this.handleCharacterRange(rangeContent, openingRangeBracket + 1);
+                            i = closingRangeBracket;
+                            this.postGroup = true;
                             break;
-                        }
-                        k++;
-                    }
-                    if (this.regex.charAt(k) != ']') {
-                        throw new PatternSyntaxException("Missing closing bracket", this.regex, -1);
-                    }
+                            case '(':
+                                this.terminateLastContent();
 
-                    if (this.regex.charAt(i + 1) == '^') {
-                        this.addNode(new NoneOfNode(this.regex.substring(j, k)));
-                    } else {
-                        this.addNode(new OneOfNode(this.regex.substring(j, k)));
-                    }
-                    i = k;
-                    postGroup = true;
-                    break;
-                case '(':
-                    this.terminateLastContent();
+                                int openingGroupBracket = i;
+                                int closingGroupBracket = this.findMatchingGroupBracket(i);
+                                String groupContent = this.regex.substring(openingGroupBracket + 1, closingGroupBracket);
 
-                    int groupJ = i + 1;
-
-                    // Figuring out how long the bracket is
-                    int groupK = groupJ;
-                    int amountOpenBrackets = 1;
-                    while (groupK < this.regex.length()) {
-                        if (this.regex.charAt(groupK) == ')' && this.regex.charAt(groupK - 1) != '\\') {
-                            amountOpenBrackets--;
-                        }
-                        if (this.regex.charAt(groupK) == '(' && this.regex.charAt(groupK - 1) != '\\') {
-                            amountOpenBrackets++;
-                        }
-                        if (amountOpenBrackets <= 0) {
-                            break;
-                        }
-                        groupK++;
-                    }
-                    if (amountOpenBrackets > 0 || this.regex.charAt(groupK) != ')') {
-                        throw new PatternSyntaxException("Missing closing bracket", this.regex, -1);
-                    }
-
-                    boolean isCapturingGroup = true;
-
-                    // Checking for weird thing's at the start of the group
-                    if (this.regex.charAt(groupJ) == '?') {
-                        groupJ++;
-                        if (this.regex.charAt(groupJ) == ':') {
-                            groupJ++;
-                            isCapturingGroup = false;
-                        } else {
-                            if (this.regex.charAt(groupJ) == '<') {
-                                groupJ++;
-                            }
-                            if (this.regex.charAt(groupJ) == '=') {
-                                groupJ++;
-                            } else if (this.regex.charAt(groupJ) == '!') {
-                                groupJ++;
-                            }
-                        }
-                    }
-
-                    if (isCapturingGroup) {
-                        this.addNode(new GroupNode(new RegexParser(this.regex.substring(groupJ, groupK)).buildRegexNodes()));
-                    } else {
-                        this.addNode(new NonCapturingGroupNode(new RegexParser(this.regex.substring(groupJ, groupK)).buildRegexNodes()));
-                    }
-                    i = groupK;
-                    postGroup = true;
-                    break;
-                default:
-                    if (currentCharacter == '\\') {
-                        escapeCharacter = true;
-                    } else {
-                        this.lastContent += currentCharacter;
-                    }
-                    postGroup = false;
-                    break;
+                                this.handleGroup(groupContent, openingGroupBracket + 1);
+                                i = closingGroupBracket;
+                                this.postGroup = true;
+                                break;
+                                default:
+                                    this.lastContent += currentCharacter;
+                                    this.postGroup = false;
+                                    break;
             }
         }
 
         // Add the last group
         this.terminateLastContent();
 
-        return nodes;
+        return this.nodes;
     }
 
-    private void addNode(Node nodeToAdd) {
+    /**
+    * Handling individual characters. Might be useful for escaping, etc.
+    * To be overridden by subclasses.
+    */
+    protected boolean handleCharacter(char character, int position) {
+        return false;
+    }
+
+    protected abstract void handleEscapeCharacter(char character, int position);
+    protected abstract void handleCharacterRange(String content, int startingPosition);
+    protected abstract void handleGroup(String content, int startingPosition);
+    protected abstract void handleGroupModifier(char modifier, int position);
+
+    protected void handleOr(int position) {
         if (this.nodes.size() > 0 && this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
-            OrNode lastOrNode = (OrNode) this.nodes.get(this.nodes.size() - 1);
-            lastOrNode.addNodeToLastPath(nodeToAdd);
+            // We already have an OrNode, we need to add a new path
+            ((OrNode) this.nodes.get(this.nodes.size() - 1)).addNewPath();
         } else {
-            this.nodes.add(nodeToAdd);
+            // This is our first OrNode
+            OrNode rootOrNode = new OrNode(this.nodes);
+            this.nodes = new ArrayList<>();
+            this.nodes.add(rootOrNode);
         }
     }
 
-    private Node getLastNode() {
-        if (this.nodes.size() <= 0) {
+    protected boolean isGroupModifier(char character) {
+        return this.groupModifiers.contains(character);
+    }
+
+    protected void addNode(Node node) {
+        int amountNodes = this.nodes.size();
+        if (amountNodes > 0 && this.nodes.get(amountNodes - 1) instanceof OrNode) {
+            OrNode lastOrNode = (OrNode) this.nodes.get(amountNodes - 1);
+            lastOrNode.addNodeToLastPath(node);
+        } else {
+            this.nodes.add(node);
+        }
+    }
+
+    protected Node getLastNode() {
+        if (this.nodes.size() == 0) {
             return null;
         }
         if (this.nodes.get(this.nodes.size() - 1) instanceof OrNode) {
             OrNode lastOrNode = (OrNode) this.nodes.get(this.nodes.size() - 1);
             return lastOrNode.getLastNode();
-        } else {
-            return this.nodes.get(this.nodes.size() - 1);
         }
+        return this.nodes.get(this.nodes.size() - 1);
     }
 
-    private void terminateLastContent() {
+    protected void terminateLastContent() {
         if (this.lastContent.length() > 0) {
             this.addNode(new Node(this.lastContent));
             this.lastContent = "";
         }
     }
 
-    private void terminateLastCharacterOrThrow() {
+    protected void terminateLastCharacterOrThrow() throws PatternSyntaxException {
         if (this.lastContent.length() <= 0) {
-            throw new PatternSyntaxException("Nothing repeat", this.regex, -1);
+            throw new PatternSyntaxException("Nothing to repeat", this.regex, -1);
         }
         if (this.lastContent.length() > 1) {
-            this.addNode(new Node(this.lastContent.substring(0, lastContent.length() - 2)));
+            String preContent = this.lastContent.substring(0, lastContent.length() - 2);
+            this.addNode(new Node(preContent));
         }
-        this.addNode(new Node(this.lastContent.substring(lastContent.length() - 1)));
+        String content = this.lastContent.substring(lastContent.length() - 1);
+        this.addNode(new Node(content));
         this.lastContent = "";
+    }
+
+    protected int findMatchingRangeBracket(int startingBracket) throws PatternSyntaxException {
+        int i = startingBracket + 1;
+        while (i < this.regex.length()) {
+            if (this.regex.charAt(i) == ']' && this.regex.charAt(i - 1) != '\\') {
+                return i;
+            }
+
+            i++;
+        }
+        throw new PatternSyntaxException("Missing closing bracket", this.regex, startingBracket);
+    }
+
+    protected int findMatchingGroupBracket(int startingBracket) throws PatternSyntaxException {
+        int i = startingBracket + 1;
+        int amountOpenBrackets = 1;
+        while (i < this.regex.length()) {
+            if (this.regex.charAt(i) == ')' && this.regex.charAt(i - 1) != '\\') {
+                amountOpenBrackets--;
+            } else if (this.regex.charAt(i) == '(' && this.regex.charAt(i - 1) != '\\') {
+                amountOpenBrackets++;
+            }
+
+            if (amountOpenBrackets == 0) {
+                return i;
+            }
+            i++;
+        }
+        throw new PatternSyntaxException("Missing closing bracket", this.regex, startingBracket);
     }
 
 }
