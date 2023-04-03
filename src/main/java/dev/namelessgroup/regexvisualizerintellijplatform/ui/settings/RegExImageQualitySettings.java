@@ -2,6 +2,9 @@ package dev.namelessgroup.regexvisualizerintellijplatform.ui.settings;
 
 import java.awt.RenderingHints;
 
+/**
+ * Settings for the image quality
+ */
 public enum RegExImageQualitySettings {
 
     ULTRA_LOW("Ultra Low", 1, RenderingHints.VALUE_RENDER_SPEED, RenderingHints.VALUE_ANTIALIAS_OFF, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF, RenderingHints.VALUE_ALPHA_INTERPOLATION_SPEED, RenderingHints.VALUE_FRACTIONALMETRICS_OFF, RenderingHints.VALUE_STROKE_DEFAULT),
@@ -9,6 +12,7 @@ public enum RegExImageQualitySettings {
     MEDIUM("Medium", 2, RenderingHints.VALUE_RENDER_DEFAULT, RenderingHints.VALUE_ANTIALIAS_OFF, RenderingHints.VALUE_TEXT_ANTIALIAS_ON, RenderingHints.VALUE_ALPHA_INTERPOLATION_DEFAULT, RenderingHints.VALUE_FRACTIONALMETRICS_DEFAULT, RenderingHints.VALUE_STROKE_NORMALIZE),
     HIGH("High", 2, RenderingHints.VALUE_RENDER_DEFAULT, RenderingHints.VALUE_ANTIALIAS_ON, RenderingHints.VALUE_TEXT_ANTIALIAS_ON, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY, RenderingHints.VALUE_FRACTIONALMETRICS_DEFAULT, RenderingHints.VALUE_STROKE_NORMALIZE),
     ULTRA_HIGH("Ultra High", 5, RenderingHints.VALUE_RENDER_QUALITY, RenderingHints.VALUE_ANTIALIAS_ON, RenderingHints.VALUE_TEXT_ANTIALIAS_ON, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY, RenderingHints.VALUE_FRACTIONALMETRICS_ON, RenderingHints.VALUE_STROKE_PURE);
+
 
     private final String name;
     private final int scalingFactor;

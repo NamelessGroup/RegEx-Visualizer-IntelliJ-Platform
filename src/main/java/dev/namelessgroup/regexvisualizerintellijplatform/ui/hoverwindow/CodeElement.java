@@ -3,32 +3,44 @@ package dev.namelessgroup.regexvisualizerintellijplatform.ui.hoverwindow;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import dev.namelessgroup.regexvisualizerintellijplatform.controller.RegexUtilites;
+import dev.namelessgroup.regexvisualizerintellijplatform.model.RegexLanguage;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 /**
  * Represents an element from the code that can be hovered over
  */
 class CodeElement {
-    private static final String STRING_REGEX = "(\"(.*)\")";
+    private final Pattern stringRegEx;
     @Nullable
     private final PsiElement element;
     @Nullable
     private String elementText;
+    private final RegexLanguage language;
 
 
     /**
      * Creates a new CodeElement
-     *
-     * @param file The PsiFile to get the element from
-     * @param offset The offset gathered from the hovered position
      */
-    public CodeElement(@Nullable PsiFile file, int offset) {
+    CodeElement(@Nullable PsiFile file, int offset) {
         if (file == null) {
             element = null;
+            stringRegEx = null;
+            language = null;
             return;
         }
-
-        element = file.findElementAt(offset);
+        this.element = file.findElementAt(offset);
+        if (element == null) {
+            stringRegEx = null;
+            language = null;
+            return;
+        }
+        language = RegexLanguage.getLanguage(element.getLanguage());
+        String stringBeginning = getStringBeginning(language);
+        stringRegEx = Pattern.compile(stringBeginning + "(.*)" + stringBeginning);
     }
 
     /**
@@ -54,8 +66,14 @@ class CodeElement {
         }
         if (elementText == null) {
             elementText = element.getText();
+            Matcher m = stringRegEx.matcher(elementText);
+            if (m.matches()) {
+                elementText = m.group(1);
+            } else {
+                return false;
+            }
         }
-        return elementText.matches(STRING_REGEX) && RegexUtilites.isRegex(elementText);
+        return RegexUtilites.isRegex(elementText);
     }
 
     /**
@@ -65,10 +83,11 @@ class CodeElement {
      */
     @Nullable
     public String getStringContents() {
-        if (elementText != null) {
-            return elementText.substring(1, elementText.length() - 1);
-        }
-        return null;
+        return elementText;
+    }
+
+    public RegexLanguage getLanguage() {
+        return language;
     }
 
     @Override
@@ -89,11 +108,16 @@ class CodeElement {
         return false;
     }
 
-    @Override
-    public String toString() {
-        if (element == null) {
-            return "null";
+    private static String getStringBeginning(@Nullable RegexLanguage language) {
+        if (language == null) {
+            return "";
         }
-        return element.getText();
+        switch (language) {
+            case JAVA:
+                return "\"";
+            default:
+                return "\"";
+        }
     }
+
 }

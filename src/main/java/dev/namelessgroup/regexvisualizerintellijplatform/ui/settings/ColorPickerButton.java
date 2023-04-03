@@ -10,14 +10,21 @@ import java.util.List;
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * Button that opens a ColorPicker
+ */
 public class ColorPickerButton extends JButton {
 
-    private final String parameterName;
     private Color color;
 
+    /**
+     * Creates a new ColorPickerButton
+     * @param parameterName The name of the parameter that is being changed
+     * @param color The initial color
+     * @param listener The listener that is called when the color is changed
+     */
     public ColorPickerButton(String parameterName, Color color, @NotNull ColorPickerListener listener) {
         super(parameterName);
-        this.parameterName = parameterName;
         this.color = color;
 
         setBackground(color);
@@ -40,11 +47,20 @@ public class ColorPickerButton extends JButton {
     private void setColorPrivate(Color color) {
         this.color = color;
     }
+
+    /**
+     * Sets the buttons color
+     * @param color The new color
+     */
     public void setColor(Color color) {
         this.color = color;
         setBackground(color);
     }
 
+    /**
+     * Gets the buttons color
+     * @return The color
+     */
     public Color getColor() {
         return color;
     }

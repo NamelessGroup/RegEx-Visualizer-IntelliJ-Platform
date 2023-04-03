@@ -11,9 +11,17 @@ import dev.namelessgroup.regexvisualizerintellijplatform.ui.toolwindow.RegExTool
 import javax.swing.*;
 import java.awt.*;
 
+/**
+ * PopUp Window inside the editor for regexes
+ */
 public class RegExPopUpWindow extends JBPanel<RegExPopUpWindow> implements UIDisplayable {
 
 
+    /**
+     * Creates a new RegExPopUpWindow
+     * @param img Image of the regex
+     * @param regex Regex of popup
+     */
     public RegExPopUpWindow(Image img, String regex) {
         super(new GridBagLayout());
         add(new JBScrollPane(new JBLabel(new ImageIcon(img))), new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.NORTH, GridBagConstraints.BOTH, JBUI.emptyInsets(), 0, 0));
